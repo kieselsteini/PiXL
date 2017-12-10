@@ -526,7 +526,7 @@ static int pixl_f_sprite(lua_State *L) {
   int h = (int)luaL_checkinteger(L, 4);
   const char *data = luaL_checklstring(L, 5, &length);
   Uint8 transparent = (Uint8)luaL_optinteger(L, 6, 16);
-  luaL_argcheck(L, length == w * h, 5, "invalid sprite data length");
+  luaL_argcheck(L, (int)length == w * h, 5, "invalid sprite data length");
   for (py = 0; py < h; ++py) {
     for (px = 0; px < w; ++px) {
       Uint8 color = sprite_color_map[(*data++) & 127];
@@ -729,7 +729,7 @@ static void pixl_render_screen(lua_State *L) {
     Uint8 *pixels, *p;
     int x, y, pitch;
 
-    if (SDL_LockTexture(texture, NULL, &pixels, &pitch)) luaL_error(L, "SDL_LockTexture() failed: %s", SDL_GetError());
+    if (SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch)) luaL_error(L, "SDL_LockTexture() failed: %s", SDL_GetError());
     for (y = 0; y < screen_height; ++y) {
       p = pixels + (y * pitch);
       for (x = 0; x < screen_width; ++x) {
