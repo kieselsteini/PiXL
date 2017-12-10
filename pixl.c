@@ -43,8 +43,21 @@
 #include "SDL.h"
 
 #if _WIN32
+#include <WinSock2.h>
+#include <Ws2tcpip.h>
+typedef int socklen_t;
 #pragma comment(lib, "SDL2.lib")
 #pragma comment(lib, "SDL2main.lib")
+#pragma comment(lib, "Ws2_32.lib")
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <fcntl.h>
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define closesocket(s) close(s)
 #endif // _WIN32
 
 
@@ -80,6 +93,8 @@ enum {
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Texture *texture = NULL;
+
+SOCKET udp = INVALID_SOCKET;
 
 Uint8 screen[PIXL_MAX_SCREEN_WIDTH][PIXL_MAX_SCREEN_HEIGHT];
 int screen_width = 0, screen_height = 0;
@@ -626,6 +641,100 @@ static int pixl_f_random(lua_State *L) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//  Networking Functions
+//
+////////////////////////////////////////////////////////////////////////////////
+static void pixl_create_udp_socket(lua_State *L) {
+  if (udp == INVALID_SOCKET) {
+    udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp == INVALID_SOCKET) luaL_error(L, "cannot create UDP socket");
+    #if _WIN32
+      DWORD nonBlocking = 1;
+      if (ioctlsocket(udp, FIONBIO, &nonBlocking) != 0) luaL_error(L, "failed to set UDP socket non-blocking");
+    #else
+      if (fcntl(udp, F_SETFL, O_NONBLOCK, 1) == -1) luaL_error(L, "failed to set UDP socket non-blocking");
+    #endif // _WIN32
+  }
+}
+
+static int pixl_f_bind(lua_State *L) {
+  struct sockaddr_in address;
+  Uint16 port = (Uint16)luaL_optinteger(L, 1, 0);
+
+  SDL_zero(address);
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+
+  if (port > 0) {
+    if (udp != INVALID_SOCKET) {
+      closesocket(udp);
+      udp = INVALID_SOCKET;
+    }
+  }
+
+  pixl_create_udp_socket(L);
+  if (bind(udp, (const struct sockaddr*)&address, sizeof(address)) < 0) luaL_error(L, "cannot bind UDP socket");
+  return 0;
+}
+
+static int pixl_f_send(lua_State *L) {
+  struct sockaddr_in address;
+  size_t length;
+  int sent_bytes;
+  Uint32 ip = (Uint32)luaL_checkinteger(L, 1);
+  Uint16 port = (Uint16)luaL_checkinteger(L, 2);
+  const char *data = luaL_checklstring(L, 3, &length);
+
+  SDL_zero(address);
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = htonl(ip);
+  address.sin_port = htons(port);
+
+  pixl_create_udp_socket(L);
+  sent_bytes = sendto(udp, data, (int)length, 0, (const struct sockaddr*)&address, sizeof(address));
+  if (sent_bytes != (int)length) luaL_error(L, "cannot send data");
+  return 0;
+}
+
+static int pixl_f_recv(lua_State *L) {
+  struct sockaddr_in address;
+  socklen_t socklen;
+  int received_bytes;
+  char data[1024 * 32];
+
+  pixl_create_udp_socket(L);
+  socklen = sizeof(address);
+  received_bytes = recvfrom(udp, data, sizeof(data), 0, (struct sockaddr*)&address, &socklen);
+  if (received_bytes > 0) {
+    lua_pushinteger(L, (lua_Integer)ntohl(address.sin_addr.s_addr));
+    lua_pushinteger(L, (lua_Integer)ntohs(address.sin_port));
+    lua_pushlstring(L, data, received_bytes);
+    return 3;
+  }
+  return 0;
+}
+
+static int pixl_f_resolve(lua_State *L) {
+  struct addrinfo hints, *result;
+  const char *hostname = luaL_checkstring(L, 1);
+  SDL_zero(hints);
+  hints.ai_family = AF_INET;
+  if (getaddrinfo(hostname, NULL, &hints, &result) == 0) {
+    if (result) {
+      lua_pushinteger(L, ntohl(((struct sockaddr_in*)(result->ai_addr))->sin_addr.s_addr));
+      freeaddrinfo(result);
+      return 1;
+    }
+  }
+  lua_pushnil(L);
+  lua_pushfstring(L, "cannot resolve " LUA_QS, hostname);
+  return 2;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //  Miscellaneous Functions
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -693,6 +802,11 @@ static const luaL_Reg pixl_funcs[] = {
 
   { "randomseed", pixl_f_randomseed },
   { "random", pixl_f_random },
+
+  { "bind", pixl_f_bind },
+  { "send", pixl_f_send },
+  { "recv", pixl_f_recv },
+  { "resolve", pixl_f_resolve },
 
   { "quit", pixl_f_quit },
   { "title", pixl_f_title },
@@ -868,6 +982,11 @@ static void pixl_run_event_loop(lua_State *L) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 static int pixl_init(lua_State *L) {
+  #if _WIN32
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != NO_ERROR) luaL_error(L, "WSAStartup() failed!");
+  #endif // _WIN32
+
   if (SDL_Init(SDL_INIT_EVERYTHING)) luaL_error(L, "SDL_Init() failed: %s", SDL_GetError());
   window = SDL_CreateWindow("PiXL Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 256, 240, SDL_WINDOW_RESIZABLE);
   if (window == NULL) luaL_error(L, "SDL_CreateWindow() failed: %s", SDL_GetError());
@@ -889,6 +1008,11 @@ static void pixl_shutdown() {
   if (renderer) SDL_DestroyRenderer(renderer);
   if (window) SDL_DestroyWindow(window);
   SDL_Quit();
+
+  if (udp != INVALID_SOCKET) closesocket(udp);
+  #if _WIN32
+    WSACleanup();
+  #endif // _WIN32
 }
 
 static void pixl_register_arg(lua_State *L, int argc, char **argv) {
