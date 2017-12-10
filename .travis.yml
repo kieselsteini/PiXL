@@ -1,0 +1,11 @@
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    - libsdl2-dev
+
+script: make
