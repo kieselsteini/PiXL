@@ -6,6 +6,7 @@ compiler:
 
 addons:
   apt:
-    - libsdl2-dev
+    packages:
+      - libsdl2-dev
 
 script: make
