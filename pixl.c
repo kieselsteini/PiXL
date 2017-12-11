@@ -100,6 +100,7 @@ SOCKET udp = INVALID_SOCKET;
 Uint8 screen[PIXL_MAX_SCREEN_WIDTH][PIXL_MAX_SCREEN_HEIGHT];
 int screen_width = 0, screen_height = 0;
 SDL_Point translation = { 0, 0 };
+int clip_xl = 0, clip_yl = 0, clip_xh = 0, clip_yh = 0;
 
 SDL_bool running = SDL_TRUE;
 Uint32 seed = 0;
@@ -285,8 +286,9 @@ static void pixl_set_resolution(lua_State *L, int width, int height) {
   screen_width = screen_height = 0;
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
   if (texture == NULL) luaL_error(L, "SDL_CreateTexture() failed: %s", SDL_GetError());
-  screen_width = width; screen_height = height;
   if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
+  screen_width = width; screen_height = height;
+  clip_xl = 0; clip_yl = 0; clip_xh = width; clip_yh = height;
 
   if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
     int factorx = (mode.w - PIXL_WINDOW_PADDING) / screen_width;
@@ -313,7 +315,9 @@ static void pixl_pset(Uint8 color, int x, int y) {
   x += translation.x;
   y += translation.y;
   if ((x >= 0) && (x < screen_width) && (y >= 0) && (y < screen_height)) {
-    screen[x][y] = color;
+    if ((x >= clip_xl) && (x <= clip_xh) && (y >= clip_yl) && (y <= clip_yh)) {
+      screen[x][y] = color;
+    }
   }
 }
 
@@ -382,6 +386,33 @@ static int pixl_f_translate(lua_State *L) {
       translation.x = (int)luaL_checknumber(L, 1);
       translation.y = (int)luaL_checknumber(L, 2);
       return 0;
+    default:
+      return luaL_error(L, "wrong number of arguments");
+  }
+}
+
+static int pixl_f_clip(lua_State *L) {
+  switch (lua_gettop(L)) {
+    case 0:
+      lua_pushinteger(L, clip_xl);
+      lua_pushinteger(L, clip_yl);
+      lua_pushinteger(L, clip_xh);
+      lua_pushinteger(L, clip_yh);
+      return 4;
+    case 4: {
+      int xl = (int)luaL_checknumber(L, 1);
+      int yl = (int)luaL_checknumber(L, 2);
+      int xh = (int)luaL_checknumber(L, 3);
+      int yh = (int)luaL_checknumber(L, 4);
+
+      if (xl > xh) pixl_swap(int, xl, xh);
+      if (yl > yh) pixl_swap(int, yl, yh);
+
+      clip_xl = xl; clip_xh = xh;
+      clip_yl = yl; clip_yh = yh;
+
+      return 0;
+    }
     default:
       return luaL_error(L, "wrong number of arguments");
   }
@@ -783,6 +814,7 @@ static const luaL_Reg pixl_funcs[] = {
   { "color", pixl_f_color },
   { "resolution", pixl_f_resolution },
   { "translate", pixl_f_translate },
+  { "clip", pixl_f_clip },
   { "glyph", pixl_f_glyph },
 
   { "clear", pixl_f_clear },

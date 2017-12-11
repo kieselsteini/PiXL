@@ -85,7 +85,9 @@ local r, g, b = pixl.color(1) -- the RGB values for color 1
 ```
 
 ### pixl.resolution([width, height])
-> **HINT:** Setting a new resolution is slow. You should not use this function regularely (e.g. in the ```update()``` call)
+> **HINT:** Setting a new resolution is slow. You should not use this function regularely (e.g. in the ```update()``` call.
+
+> **HINT:** Setting a new resolution will reset the clipping area to the whole screen.
 
 ```lua
 pixl.resolution(256, 240) -- set resolution to 256x240 (NES screen size)
@@ -93,12 +95,23 @@ pixl.resolution(256, 240) -- set resolution to 256x240 (NES screen size)
 local width, height = pixl.resolution() -- get current resolution (this is a quick call)
 ```
 
-### pixl.translation([x, y])
+### pixl.translate([x, y])
 ```lua
-pixl.translation(-10, -10) -- set translation to -10,-10
+pixl.translate(-10, -10) -- set translation to -10,-10
 pixl.point(1, 10, 10) -- this pixel will now appear on 0,0
 
-local x, y = pixl.translation() -- get current translation
+local x, y = pixl.translate() -- get current translation
+```
+
+### pixl.clip([x1, y1, x2, y2])
+Restrict drawing inside the area of *x1*, *y1* to *x2*, *y2*.
+```lua
+pixl.clip(10, 10, 50, 50) -- restrict drawing to the area of 10,10-50,50
+
+local w, h = pixl.resolution()
+pixl.clip(0, 0, w - 1, h - 1) -- reset clipping to the whole screen
+
+local x1, y1, x2, y2 = pixl.clip() -- get current clipping area
 ```
 
 ### pixl.glyph(ch[, bitdata])
@@ -112,13 +125,14 @@ local bitpattern = pixl.glyph(string.byte('@')) -- get bitpattern for '@'
 ## Primitive Drawing Routines
 
 ### pixl.clear([color])
-> **HINT:** ```pixl.clear()``` ignores translation!
+> **HINT:** ```pixl.clear()``` ignores translation and clipping!
 ```lua
 pixl.clear() -- clear screen to color 0 (this is default)
 pixl.clear(5) -- clear screen to color 5
 ```
 
 ### pixl.point([color, ] x, y)
+> **HINT:** Getting a pixel from screen ignores translation and clipping.
 ```lua
 pixl.point(10, 100, 100) -- set the pixel at 100,100 to color 10
 
