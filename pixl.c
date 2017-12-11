@@ -318,8 +318,6 @@ static void pixl_pset(Uint8 color, int x, int y) {
 }
 
 static Uint8 pixl_pget(int x, int y) {
-  x += translation.x;
-  y += translation.y;
   if ((x >= 0) && (x < screen_width) && (y >= 0) && (y < screen_height)) {
     return screen[x][y] & 15;
   }
