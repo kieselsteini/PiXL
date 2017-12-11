@@ -21,7 +21,6 @@ PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 
 ## Planned Features
 - chiptune sound engine with different waveform generators
-- UDP networking interface
 
 ## Goals
 - **a "ready to go" package**: just ship PiXL.exe / SDL2.dll / LICENSES.txt and your game.lua
@@ -232,6 +231,45 @@ local r = pixl.random() -- get a random value between [0,1)
 local r = pixl.random(6) -- get a random value between [1,6]
 
 local r = pixl.random(10, 20) -- get random value between [10,20]
+```
+
+## Network Support
+PiXL provides a simple networking API for sending and receiving UDP packages. Especially for games UDP has many advantages (and a *big* disadvantage as well...see the hint), such as small footprint, fast delivery, connectionless and an idea of packets (in contrast to TCP which is a stream).
+
+Please note that networking is a complex task and even harder to debug. It is entirely out of scope of this small manual to teach you how to use UDP properly.
+
+The UDP socket created by PiXL will be set to no-blocking to simplify the ```recv()``` implementation. But also ```send()``` profits from this design decision as the send calls will return immediately.
+
+> **HINT:** UDP is an unreliable protocol, so packets may arrive out of order or even not at all. You have to provide some mechanism to ensure that everything is fine.
+
+### pixl.bind([port])
+Bind the UDP socket to a specific port. This is useful for the server part. If you don't specify a port, a random free port will be used.
+
+If the socket was already bound, it will be closed and a new socket is created.
+```lua
+pixl.bind(12345) -- bind to the port 12345, this is useful for servers
+
+pixl.bind() -- unbind and use random free port, useful for clients
+```
+
+### pixl.send(address, port, data)
+```lua
+local addr = pixl.resolve('remote-host.org')
+pixl.send(addr, 12345, 'This is my message!')
+```
+
+### pixl.recv()
+```lua
+local addr, port, data = pixl.recv() -- this functions returns nil if no packet is available
+```
+
+### pixl.resolve(hostname)
+Resolves the given *hostname* to an IPv4 address which will be returned as a number. If the *hostname* could not be resolved, it returns *nil* and a error message.
+> **HINT:** This function could take some to time to complete as it might require to resolve the hostname with external DNS.
+```lua
+local addr = pixl.resolve('my-host.org') -- returns the IPv4 address of the given hostname
+
+local addr = assert(pixl.resolve('127.0.0.1'))
 ```
 
 ## Miscellaneous Functions
