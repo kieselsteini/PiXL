@@ -372,7 +372,7 @@ static int pixl_f_resolution(lua_State *L) {
   }
 }
 
-static int pixl_f_translation(lua_State *L) {
+static int pixl_f_translate(lua_State *L) {
   switch (lua_gettop(L)) {
     case 0:
       lua_pushinteger(L, translation.x);
@@ -782,7 +782,7 @@ static int pixl_f_time(lua_State *L) {
 static const luaL_Reg pixl_funcs[] = {
   { "color", pixl_f_color },
   { "resolution", pixl_f_resolution },
-  { "translation", pixl_f_translation },
+  { "translate", pixl_f_translate },
   { "glyph", pixl_f_glyph },
 
   { "clear", pixl_f_clear },
