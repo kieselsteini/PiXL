@@ -9,3 +9,12 @@ install:
 build_script:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - build.bat
+
+after_build:
+  - mkdir PiXL
+  - copy PiXL.exe SDL2.dll PiXL
+
+artifacts:
+  - path: PiXL
+    name: PiXL
+    type: zip

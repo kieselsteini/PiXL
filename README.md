@@ -4,6 +4,7 @@
 PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 
 [![Build Status](https://travis-ci.org/kieselsteini/PiXL.svg?branch=master)](https://travis-ci.org/kieselsteini/PiXL)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/kieselsteini/PiXL)](https://ci.appveyor.com/project/kieselsteini/pixl)
 
 ## Features
 - newest Lua 5.3 with all features
