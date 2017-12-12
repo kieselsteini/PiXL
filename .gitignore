@@ -1,3 +1,6 @@
 build
 .vscode
 SDL2
+SDL2.dll
+PiXL.exe
+game.lua
