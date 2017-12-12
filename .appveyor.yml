@@ -1,0 +1,22 @@
+image:
+- Visual Studio 2017
+
+install:
+  - ps: Start-FileDownload 'http://libsdl.org/release/SDL2-devel-2.0.7-VC.zip'
+  - ps: 7z x SDL2-devel-2.0.7-VC.zip
+  - ps: ren SDL2-2.0.7 SDL2
+
+build_script:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - build.bat
+
+after_build:
+  - mkdir PiXL
+  - copy PiXL.exe PiXL
+  - copy SDL2.dll PiXL
+  - copy LICENSES.txt PiXL
+
+artifacts:
+  - path: PiXL
+    name: PiXL
+    type: zip
