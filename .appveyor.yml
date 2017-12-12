@@ -1,0 +1,7 @@
+install:
+  - ps: Start-FileDownload 'http://libsdl.org/release/SDL2-devel-2.0.7-VC.zip'
+  - ps: 7z x SDL2-devel-2.0.7-VC.zip
+  - ps: ren SDL2-2.0.7 SDL2
+
+build_script:
+  - build.bat
