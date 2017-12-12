@@ -15,6 +15,7 @@ PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 - customizeable font glyphs
 - sprite/images are simple Lua strings
 - controller support
+- WAD file archive loading
 
 ## Non-Features
 - image loading / saving ... sprites are Lua strings!
@@ -313,4 +314,18 @@ local text = pixl.clipboard() -- get text from clipboard (nil if empty)
 ### pixl.time()
 ```lua
 local time = pixl.time() -- return the passed time sice start in seconds
+```
+
+## WAD Archive Support
+
+### pixl.openwad(filename)
+Opens a DOOM WAD archive and adds the lumps to the virtual file system.
+```lua
+assert(pixl.openwad('mygame.wad'))
+```
+
+### pixl.loadfile(filename)
+Loads the file with *filename*. PiXL tries to load the file in the current directory and then it tries to find the *filename* in the loaded WAD archives.
+```lua
+local data = pixl.loadfile('assets.lua') -- load the assets.lua file from current directory or WAD
 ```

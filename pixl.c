@@ -273,6 +273,8 @@ static const Uint8 sprite_color_map[128] = {
   0, 0, 0, 0, 0, 0, 0
 };
 
+#include "boot.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1027,7 +1029,7 @@ static int pixl_init(lua_State *L) {
   pixl_set_resolution(L, 256, 240);
   pixl_open_controllers(L);
 
-  if (luaL_loadfile(L, "game.lua") != LUA_OK) lua_error(L);
+  if (luaL_loadbuffer(L, boot_lua, boot_lua_len, "boot.lua") != LUA_OK) lua_error(L);
   lua_call(L, 0, 0);
 
   pixl_run_event_loop(L);
