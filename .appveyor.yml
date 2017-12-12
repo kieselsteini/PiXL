@@ -12,7 +12,9 @@ build_script:
 
 after_build:
   - mkdir PiXL
-  - copy PiXL.exe SDL2.dll PiXL
+  - copy PiXL.exe PiXL
+  - copy SDL2.dll PiXL
+  - copy LICENSES.txt PiXL
 
 artifacts:
   - path: PiXL
