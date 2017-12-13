@@ -14,10 +14,13 @@ function pixl.openwad(filename)
     return nil, err
   end
   local magic, numlumps, tableofs = string.unpack('< c4 i4 i4', fp:read(12))
+  if magic ~= 'IWAD' or magic ~= 'PWAD' then
+    return nil, string.format("file '%s' is no WAD archive")
+  end
   assert(fp:seek('set', tableofs))
   for i = 1, numlumps do
     local offset, length, name = string.unpack('< i4 i4 c8', fp:read(16))
-    name = string.match(name, '[^\0]+')
+    name = string.upper(string.match(name, '[^\0]+'))
     wad_lumps[name] = { fp = fp, offset = offset, length = length }
   end
   return true
@@ -47,9 +50,10 @@ end
 --  Module Loader
 --------------------------------------------------------------------------------
 table.insert(package.searchers, 2, function(modulename)
-  local code = pixl.loadfile(modulename .. '.lua')
+  local filename = modulename .. '.lua'
+  local code = pixl.loadfile(filename)
   if code then
-    return load(code)
+    return load(code, filename)
   else
     return string.format("\n\tno virtual module '%s'", modulename)
   end
