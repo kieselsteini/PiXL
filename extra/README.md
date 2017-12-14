@@ -8,7 +8,7 @@ local palette = require('palette')
 palette.Commodore64()
 ```
 
-### palette.dawnbringer16()
+### palette.DawnBringer16()
 The default palette of PiXL. See https://github.com/geoffb/dawnbringer-palettes
 
 ### palette.pico8()
@@ -17,11 +17,17 @@ Set the PICO-8 palette. PICO8 is a fantasy 8-bit console using Lua for scripting
 ### palette.Commodore64()
 Set the 16 colors to the palette of the famous Commodore 64.
 
-### palette.IBM_CGA()
-The old IBM PC Color Graphics Adapter palette. If you want to create old MS-DOS games.
+### palette.IBM_EGA()
+The old IBM PC EGA 16 color palette. If you want to create old MS-DOS games.
 
 ### palette.ZXSpectrum()
 The 16 colors of Britains famous Sinclair ZX Spectrum home computer.
+
+### palette.IBM_CGA_Low1()
+### palette.IBM_CGA_High1()
+### palette.IBM_CGA_Low2()
+### palette.IBM_CGA_High2()
+The 4 color palette modes that IBM CGA graphics mode could provide. For really old MS-DOS games :smile:.
 
 ### palette.GameBoy()
 Sets the first 4 colors to the greenish 4 shades of the original Nintendo GameBoy. Other colors will be set to black.
