@@ -93,3 +93,45 @@ local List = Object({
   end,
 })
 ```
+
+## threads.lua
+A simple module to program with coroutines and waits. You can use the functions directly from the module or create a separate instance.
+```lua
+local threads = require('threads')
+
+local my_threads = threads()
+print(my_threads.active())
+```
+
+### thread.start(fn)
+Starts a new thread. The given function will be called with *wait* which is function to wait a certain amount of seconds.
+It returns a function to "stop" the coroutine (it will not be resumed anymore).
+```lua
+local stop_it = threads.start(function(wait)
+  -- do some stuff
+  wait(5.0) -- wait for 5s
+  -- do some other stuff
+  wait(0.1) -- wait for 0.1s
+end)
+
+-- now let's stop the thread
+stop_it()
+```
+
+### thread.update(dt)
+This should be called regularely with the *dt* counting the time in seconds since the last *thread.update()* call.
+You typically can call this inside the global *update(dt)* function which will be called by PiXL.
+```lua
+function update(dt)
+  -- we update also our timed threads
+  threads.update(dt)
+end
+```
+
+### threads.active()
+Returns *true* if there are any running threads.
+```lua
+if threads.active() then
+  -- still some threads running
+end
+```
