@@ -619,9 +619,11 @@ static int pixl_f_sprite(lua_State *L) {
 ////////////////////////////////////////////////////////////////////////////////
 static void pixl_sound_mixer(void *userdata, Uint8 *stream, int length) {
   static Uint32 noise = 47;
-  for (int i = 0; i < length; ++i) {
+  int i, j;
+  (void)userdata;
+  for (i = 0; i < length; ++i) {
     Sint8 sample = 0;
-    for (int j = 0; j < PIXL_SOUND_CHANNELS; ++j) {
+    for (j = 0; j < PIXL_SOUND_CHANNELS; ++j) {
       SoundChannel *channel = &sound_channels[j];
       switch (channel->waveform) {
         case PIXL_WAVEFORM_PULSE:
