@@ -13,7 +13,11 @@ local function new(self, object)
   assert(type(self) == 'table', "Object expected for self, got '%s'", type(self))
   object = object or {}
   assert(type(object) == 'table', "Table expected for new, got '%s'", type(object))
-  return setmetatable(object, { __index = self, __call = new })
+  object = setmetatable(object, { __index = self, __call = new })
+  if type(object.__init) == 'function' then
+    object:__init()
+  end
+  return object
 end
 
 return new({})

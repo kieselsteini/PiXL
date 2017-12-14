@@ -84,4 +84,12 @@ Player2:move(20, -7)
 
 print(Player1.x, Player1.y) --> -10  5
 print(Player2.x, Player2.y) -->  20 -7
+
+-- create an object with "constructor" method
+local List = Object({
+  __init = function(self)
+    -- this init function will called when a new object is created
+    self.list = {}
+  end,
+})
 ```
