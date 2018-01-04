@@ -1140,7 +1140,8 @@ static int pixl_init(lua_State *L) {
 
   audio_device = SDL_OpenAudioDevice(NULL, SDL_FALSE, &want, &have, 0);
   if (audio_device == 0) luaL_error(L, "SDL_OpenAudioDevice() failed: %s", SDL_GetError());
-  if (want.format != AUDIO_S8) luaL_error(L, "SDL_OpenAudioDevice() created wrong audio format");
+  if (have.format != AUDIO_S8) luaL_error(L, "SDL_OpenAudioDevice() created wrong audio format");
+  if (have.channels != 1) luaL_error(L, "SDL_OpenAudioDevice() created wrong number of channels");
   sound_sample_rate = (float)have.freq;
   SDL_PauseAudioDevice(audio_device, SDL_FALSE);
 
