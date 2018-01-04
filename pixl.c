@@ -279,7 +279,7 @@ static const Uint8 sprite_color_map[128] = {
 //  Helpers
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void pixl_set_resolution(lua_State *L, int width, int height) {
+static void pixl_set_resolution(lua_State *L, int width, int height, double aspect) {
   SDL_DisplayMode mode;
 
   if (texture) SDL_DestroyTexture(texture);
@@ -289,6 +289,8 @@ static void pixl_set_resolution(lua_State *L, int width, int height) {
   if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
   screen_width = width; screen_height = height;
   clip_xl = 0; clip_yl = 0; clip_xh = width; clip_yh = height;
+
+  if (aspect) height = (int)((1.0 / aspect) * (double)width);
 
   if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
     int factorx = (mode.w - PIXL_WINDOW_PADDING) / screen_width;
@@ -359,17 +361,20 @@ static int pixl_f_color(lua_State *L) {
 
 static int pixl_f_resolution(lua_State *L) {
   int width, height;
+  double aspect;
   switch (lua_gettop(L)) {
     case 0:
       lua_pushinteger(L, screen_width);
       lua_pushinteger(L, screen_height);
       return 2;
     case 2:
+    case 3:
       width = (int)luaL_checkinteger(L, 1);
       height = (int)luaL_checkinteger(L, 2);
+      aspect = (double)luaL_optnumber(L, 3, 0.0);
       luaL_argcheck(L, (width > 0) && (width < PIXL_MAX_SCREEN_HEIGHT), 1, "invalid width");
       luaL_argcheck(L, (height > 0) && (height < PIXL_MAX_SCREEN_HEIGHT), 2, "invalid height");
-      pixl_set_resolution(L, width, height);
+      pixl_set_resolution(L, width, height, aspect);
       return 0;
     default:
       return luaL_error(L, "wrong number of arguments");
@@ -1024,7 +1029,7 @@ static int pixl_init(lua_State *L) {
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (renderer == NULL) luaL_error(L, "SDL_CreateRenderer() failed: %s", SDL_GetError());
   SDL_StartTextInput();
-  pixl_set_resolution(L, 256, 240);
+  pixl_set_resolution(L, 256, 240, 0.0);
   pixl_open_controllers(L);
 
   if (luaL_loadfile(L, "game.lua") != LUA_OK) lua_error(L);
