@@ -1,7 +1,7 @@
-# PiXL - a tiny Lua pixel game engine
+# PiXL - a tiny Lua pixel/chiptune game engine
 > “Make things as simple as possible, but not simpler.” - *Albert Einstein*
 
-PiXL is a tiny pixel game engine that's great for retro games or game-jams.
+PiXL is a tiny pixel/chiptune game engine that's great for retro games or game-jams.
 
 [![Build Status](https://travis-ci.org/kieselsteini/PiXL.svg?branch=master)](https://travis-ci.org/kieselsteini/PiXL)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/kieselsteini/PiXL)](https://ci.appveyor.com/project/kieselsteini/pixl)
@@ -14,14 +14,12 @@ PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 - simple and advanced drawing functions
 - customizeable font glyphs
 - sprite/images are simple Lua strings
+- simple chip-tune support with different waveforms
 - controller support
 
 ## Non-Features
 - image loading / saving ... sprites are Lua strings!
 - advanced modern OpenGL/Direct3D rendering
-
-## Planned Features
-- chiptune sound engine with different waveform generators
 
 ## Goals
 - **a "ready to go" package**: just ship PiXL.exe / SDL2.dll / LICENSES.txt and your game.lua
@@ -287,6 +285,29 @@ Resolves the given *hostname* to an IPv4 address which will be returned as a num
 local addr = pixl.resolve('my-host.org') -- returns the IPv4 address of the given hostname
 
 local addr = assert(pixl.resolve('127.0.0.1'))
+```
+
+## Sound Functions
+
+PiXL provides a simple interface to create chip-tune sounds. The simple command ```sound()``` activates a sound generator in one of the 8 sound channels.
+Supported waveforms for the sound generator:
+* **silent** disable the sound generator
+* **pulse50** a pulse wave with 50% duty cycle
+* **pulse25** a pulse wave with 25% duty cycle
+* **pulse12** a pulse wave with 12.5% duty cycle
+* **noise** a white-noise generator (can be pitched with frequency)
+
+### pixl.sound(channel[, waveform[, frequency, duration]])
+Activate (or deactivate) a sound generator channel.
+```lua
+pixl.sound(0, 'pulse50', 440, 1.0) -- play a 440Hz tone on channel 0 for 1s
+pixl.sound(1, 'pulse25', 880, 1.0) -- play a 880Hz tone on channel 1 for 1s
+pixl.sound(2, 'pulse12', 220, 1.0) -- play a 220Hz tone on channel 2 for 1s
+
+pixl.sound(5, 'noise', 1000, 2) -- play a noise with 1000Hz on channel 5 for 2 seconds
+
+pixl.sound(6, 'silent') -- disable sound generation on channel 6
+pixl.sound(7) -- disable sound generation on channel 7
 ```
 
 ## Miscellaneous Functions

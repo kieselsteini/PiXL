@@ -72,6 +72,8 @@ typedef int SOCKET;
 
 #define PIXL_WINDOW_PADDING     64
 
+#define PIXL_SOUND_CHANNELS     8
+
 enum {
   PIXL_BUTTON_A = 1 << 0,
   PIXL_BUTTON_B = 1 << 1,
@@ -85,6 +87,22 @@ enum {
   PIXL_BUTTON_SELECT = 1 << 9
 };
 
+enum {
+  PIXL_WAVEFORM_SILENT,
+  PIXL_WAVEFORM_PULSE50,
+  PIXL_WAVEFORM_PULSE25,
+  PIXL_WAVEFORM_PULSE12,
+  PIXL_WAVEFORM_NOISE
+};
+
+typedef struct SoundChannel {
+  int waveform;
+  int cycle;
+  int counter;
+  int duty;
+  int duration;
+} SoundChannel;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -94,6 +112,7 @@ enum {
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Texture *texture = NULL;
+SDL_AudioDeviceID audio_device = 0;
 
 SOCKET udp = INVALID_SOCKET;
 
@@ -102,8 +121,11 @@ int screen_width = 0, screen_height = 0;
 SDL_Point translation = { 0, 0 };
 int clip_xl = 0, clip_yl = 0, clip_xh = 0, clip_yh = 0;
 
+SoundChannel sound_channels[PIXL_SOUND_CHANNELS];
+float sound_sample_rate = 0.0f;
+
 SDL_bool running = SDL_TRUE;
-Uint32 seed = 0;
+Uint32 random_seed = 0;
 
 SDL_Point mouse = { 0, 0 };
 int buttons_down = 0;
@@ -328,6 +350,35 @@ static Uint8 pixl_pget(int x, int y) {
     return screen[x][y] & 15;
   }
   return 0;
+}
+
+static Uint32 pixl_xorshift(Uint32 *seed) {
+  Uint32 x = *seed;
+  if (x == 0) x = 314159265;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  *seed = x;
+  return x;
+}
+
+static void pixl_sound(int slot, int waveform, float frequency, float duration) {
+  if (slot < 0 || slot >= PIXL_SOUND_CHANNELS) return;
+  SoundChannel *channel = &sound_channels[slot];
+
+  SDL_LockAudioDevice(audio_device);
+  channel->waveform = waveform;
+  if (waveform != PIXL_WAVEFORM_SILENT) {
+    channel->cycle = (int)(sound_sample_rate / frequency);
+    channel->counter = channel->cycle;
+    channel->duration = (int)(sound_sample_rate * duration);
+    switch (waveform) {
+      case PIXL_WAVEFORM_PULSE50: channel->duty = channel->cycle / 2; break;
+      case PIXL_WAVEFORM_PULSE25: channel->duty = channel->cycle / 4; break;
+      case PIXL_WAVEFORM_PULSE12: channel->duty = channel->cycle / 8; break;
+    }
+  }
+  SDL_UnlockAudioDevice(audio_device);
 }
 
 #define pixl_swap(T, a, b) do { T __tmp__ = a; a = b; b = __tmp__; } while(0)
@@ -589,6 +640,57 @@ static int pixl_f_sprite(lua_State *L) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+//  Sound Functions
+//
+////////////////////////////////////////////////////////////////////////////////
+static void pixl_sound_mixer(void *userdata, Uint8 *stream, int length) {
+  static Uint32 noise = 47;
+  int i, j;
+  (void)userdata;
+  for (i = 0; i < length; ++i) {
+    Sint8 sample = 0;
+    for (j = 0; j < PIXL_SOUND_CHANNELS; ++j) {
+      SoundChannel *channel = &sound_channels[j];
+      switch (channel->waveform) {
+        case PIXL_WAVEFORM_PULSE50:
+        case PIXL_WAVEFORM_PULSE25:
+        case PIXL_WAVEFORM_PULSE12:
+          if (--channel->duration <= 0) channel->waveform = PIXL_WAVEFORM_SILENT;
+          if (++channel->counter >= channel->cycle) channel->counter = 0;
+          sample += channel->counter < channel->duty ? 8 : -8;
+          break;
+        case PIXL_WAVEFORM_NOISE:
+          if (--channel->duration <= 0) channel->waveform = PIXL_WAVEFORM_SILENT;
+          if (++channel->counter >= channel->cycle) {
+            channel->counter = 0;
+            channel->duty = pixl_xorshift(&noise) % 16 - 8;
+          }
+          sample += (Sint8)channel->duty;
+          break;
+        case PIXL_WAVEFORM_SILENT:
+          break;
+      }
+    }
+    *stream++ = (Uint8)sample;
+  }
+}
+
+static int pixl_f_sound(lua_State *L) {
+  static const char *options[] = { "silent", "pulse50", "pulse25", "pulse12", "noise", NULL };
+  int slot = (int)luaL_checkinteger(L, 1);
+  luaL_argcheck(L, slot >= 0 && slot < PIXL_SOUND_CHANNELS, 1, "invalid sound channel");
+  int waveform = luaL_checkoption(L, 2, "silent", options);
+  if (waveform != PIXL_WAVEFORM_SILENT) {
+    float frequency = (float)luaL_checknumber(L, 3);
+    float duration = (float)luaL_checknumber(L, 4);
+    pixl_sound(slot, waveform, frequency, duration);
+  } else pixl_sound(slot, PIXL_WAVEFORM_SILENT, 0.0f, 0.0f);
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //  Input Functions
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -630,10 +732,10 @@ static int pixl_f_inkey(lua_State *L) {
 static int pixl_f_randomseed(lua_State *L) {
   switch (lua_gettop(L)) {
     case 0:
-      lua_pushinteger(L, seed);
+      lua_pushinteger(L, random_seed);
       return 1;
     case 1:
-      seed = (Uint32)luaL_checkinteger(L, 1);
+      random_seed = (Uint32)luaL_checkinteger(L, 1);
       return 0;
     default:
       return luaL_error(L, "wrong number of arguments");
@@ -641,15 +743,8 @@ static int pixl_f_randomseed(lua_State *L) {
 }
 
 static int pixl_f_random(lua_State *L) {
-  double r;
   lua_Integer low, up;
-
-  // perform xorshift32
-  if (seed == 0) seed = 314159265;
-  seed ^= seed << 13;
-  seed ^= seed >> 17;
-  seed ^= seed << 5;
-  r = (double)seed / 4294967296.0;
+  double r = (double)pixl_xorshift(&random_seed) / 4294967296.0;
 
   switch (lua_gettop(L)) {
     case 0:
@@ -836,6 +931,8 @@ static const luaL_Reg pixl_funcs[] = {
 
   { "print", pixl_f_print },
   { "sprite", pixl_f_sprite },
+
+  { "sound", pixl_f_sound },
 
   { "btn", pixl_f_btn },
   { "btnp", pixl_f_btnp },
@@ -1039,6 +1136,21 @@ static int pixl_init(lua_State *L) {
   pixl_set_resolution(L, 256, 240, 0.0);
   pixl_open_controllers(L);
 
+  SDL_AudioSpec want, have;
+  SDL_zero(want); SDL_zero(have); SDL_zero(sound_channels);
+  want.freq = 44100;
+  want.format = AUDIO_S8;
+  want.channels = 1;
+  want.samples = 1024 * 4;
+  want.callback = pixl_sound_mixer;
+
+  audio_device = SDL_OpenAudioDevice(NULL, SDL_FALSE, &want, &have, 0);
+  if (audio_device == 0) luaL_error(L, "SDL_OpenAudioDevice() failed: %s", SDL_GetError());
+  if (have.format != AUDIO_S8) luaL_error(L, "SDL_OpenAudioDevice() created wrong audio format");
+  if (have.channels != 1) luaL_error(L, "SDL_OpenAudioDevice() created wrong number of channels");
+  sound_sample_rate = (float)have.freq;
+  SDL_PauseAudioDevice(audio_device, SDL_FALSE);
+
   if (luaL_loadfile(L, "game.lua") != LUA_OK) lua_error(L);
   lua_call(L, 0, 0);
 
@@ -1047,6 +1159,7 @@ static int pixl_init(lua_State *L) {
 }
 
 static void pixl_shutdown() {
+  if (audio_device) SDL_CloseAudioDevice(audio_device);
   if (texture) SDL_DestroyTexture(texture);
   if (renderer) SDL_DestroyRenderer(renderer);
   if (window) SDL_DestroyWindow(window);
