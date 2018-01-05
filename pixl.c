@@ -286,11 +286,11 @@ static void pixl_set_resolution(lua_State *L, int width, int height, double aspe
   screen_width = screen_height = 0;
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
   if (texture == NULL) luaL_error(L, "SDL_CreateTexture() failed: %s", SDL_GetError());
-  if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
   screen_width = width; screen_height = height;
   clip_xl = 0; clip_yl = 0; clip_xh = width; clip_yh = height;
 
   if (aspect) height = (int)((1.0 / aspect) * (double)width);
+  if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
 
   if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
     int factorx = (mode.w - PIXL_WINDOW_PADDING) / width;
