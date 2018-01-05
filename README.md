@@ -10,7 +10,7 @@ PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 - newest Lua 5.3 with all features
 - pure software rendered screen
 - 16 color palette
-- variable resolution (up to 2048x2048)
+- variable resolution (up to 2048x2048) and aspect ratios
 - simple and advanced drawing functions
 - customizeable font glyphs
 - sprite/images are simple Lua strings
@@ -85,13 +85,15 @@ pixl.color(1, 0x00, 0x00, 0xAA) -- set color 1 to RGB #0000AA
 local r, g, b = pixl.color(1) -- the RGB values for color 1
 ```
 
-### pixl.resolution([width, height])
+### pixl.resolution([width, height[, aspect]])
 > **HINT:** Setting a new resolution is slow. You should not use this function regularely (e.g. in the ```update()``` call.
 
 > **HINT:** Setting a new resolution will reset the clipping area to the whole screen.
 
 ```lua
 pixl.resolution(256, 240) -- set resolution to 256x240 (NES screen size)
+
+pixl.resolution(320, 200, 4.0 / 3.0) -- set the resolution to 320x200 (famous DOS VGA) and also set the aspect ratio to 4:3
 
 local width, height = pixl.resolution() -- get current resolution (this is a quick call)
 ```
@@ -336,4 +338,11 @@ local text = pixl.clipboard() -- get text from clipboard (nil if empty)
 ### pixl.time()
 ```lua
 local time = pixl.time() -- return the passed time sice start in seconds
+```
+
+### pixl.cursor([enable])
+```lua
+pixl.cursor(false) -- hide the mouse cursor in the window
+
+local visible = pixl.cursor() -- query the cursor show state
 ```

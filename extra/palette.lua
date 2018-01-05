@@ -24,7 +24,7 @@ local function setpalette(palette)
 end
 
 return {
-  dawnbringer16 = function()
+  DawnBringer16 = function()
     setpalette({
       '#140C1C',
       '#442434',
@@ -87,7 +87,7 @@ return {
     })
   end,
 
-  IBM_CGA = function()
+  IBM_EGA = function()
     setpalette({
       '#000000',
       '#0000AA',
@@ -126,6 +126,42 @@ return {
       '#00FFFF',
       '#FFFF00',
       '#FFFFFF',
+    })
+  end,
+
+  IBM_CGA_Low1 = function()
+    setpalette({
+      '#000000',
+      '#00AAAA',
+      '#AA00AA',
+      '#AAAAAA',
+    })
+  end,
+
+  IBM_CGA_High1 = function()
+    setpalette({
+      '#000000',
+      '#55FFFF',
+      '#FF55FF',
+      '#FFFFFF',
+    })
+  end,
+
+  IBM_CGA_Low2 = function()
+    setpalette({
+      '#000000',
+      '#00AA00',
+      '#AA0000',
+      '#AA5500',
+    })
+  end,
+
+  IBM_CGA_High2 = function()
+    setpalette({
+      '#000000',
+      '#55FF55',
+      '#FF5555',
+      '#FFFF55',
     })
   end,
 

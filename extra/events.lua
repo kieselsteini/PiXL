@@ -1,26 +1,50 @@
 --[[----------------------------------------------------------------------------
 
-    Very simplistic Object for prototype based programming.
+    Simple event dispatcher for objects
     written by Sebastian Steinhauer <s.steinhauer@yahoo.de>
 
 --]]----------------------------------------------------------------------------
 
-local assert = assert
-local type = type
-local setmetatable = setmetatable
+local Object = require('object') -- needs object.lua from extra
 
-local function new(self, object)
-  assert(type(self) == 'table', "Object expected for self, got '%s'", type(self))
-  object = object or {}
-  assert(type(object) == 'table', "Table expected for new, got '%s'", type(object))
-  object = setmetatable(object, { __index = self, __call = new })
-  if type(object.__init) == 'function' then
-    object:__init()
-  end
-  return object
-end
+return Object({
+  __init = function(self)
+    self.listeners = {}
+  end,
 
-return new({})
+  listen = function(self, message, object, fn)
+    fn = fn or object[message]
+    assert(type(fn) == 'function')
+    local listeners = self.listeners[message] or setmetatable({}, { __mode = 'kv' })
+    listeners[object] = fn
+    self.listeners[message] = listeners
+  end,
+
+  send = function(self, message, ...)
+    local listeners = self.listeners[message]
+    if listeners then
+      for object, fn in pairs(listeners) do
+        fn(object, ...)
+      end
+    end
+  end,
+
+  ignore = function(self, message, object)
+    local listeners = self.listeners[message]
+    if listeners then
+      listeners[object] = nil
+      if not next(listeners) then
+        self.listeners[message] = nil
+      end
+    end
+  end,
+
+  ignore_all = function(self, object)
+    for message, listeners in pairs(self.listeners) do
+      self:ignore(message, object)
+    end
+  end,
+})
 
 --[[----------------------------------------------------------------------------
 

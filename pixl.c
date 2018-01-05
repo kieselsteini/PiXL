@@ -301,20 +301,22 @@ static const Uint8 sprite_color_map[128] = {
 //  Helpers
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void pixl_set_resolution(lua_State *L, int width, int height) {
+static void pixl_set_resolution(lua_State *L, int width, int height, double aspect) {
   SDL_DisplayMode mode;
 
   if (texture) SDL_DestroyTexture(texture);
   screen_width = screen_height = 0;
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
   if (texture == NULL) luaL_error(L, "SDL_CreateTexture() failed: %s", SDL_GetError());
-  if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
   screen_width = width; screen_height = height;
   clip_xl = 0; clip_yl = 0; clip_xh = width; clip_yh = height;
 
+  if (aspect) height = (int)((1.0 / aspect) * (double)width);
+  if (SDL_RenderSetLogicalSize(renderer, width, height)) luaL_error(L, "SDL_RenderSetLogicalSize() failed: %s", SDL_GetError());
+
   if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
-    int factorx = (mode.w - PIXL_WINDOW_PADDING) / screen_width;
-    int factory = (mode.h - PIXL_WINDOW_PADDING) / screen_height;
+    int factorx = (mode.w - PIXL_WINDOW_PADDING) / width;
+    int factory = (mode.h - PIXL_WINDOW_PADDING) / height;
     int factor = factory > factorx ? factorx : factory;
     SDL_SetWindowSize(window, width * factor, height * factor);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -410,17 +412,20 @@ static int pixl_f_color(lua_State *L) {
 
 static int pixl_f_resolution(lua_State *L) {
   int width, height;
+  double aspect;
   switch (lua_gettop(L)) {
     case 0:
       lua_pushinteger(L, screen_width);
       lua_pushinteger(L, screen_height);
       return 2;
     case 2:
+    case 3:
       width = (int)luaL_checkinteger(L, 1);
       height = (int)luaL_checkinteger(L, 2);
+      aspect = (double)luaL_optnumber(L, 3, 0.0);
       luaL_argcheck(L, (width > 0) && (width < PIXL_MAX_SCREEN_HEIGHT), 1, "invalid width");
       luaL_argcheck(L, (height > 0) && (height < PIXL_MAX_SCREEN_HEIGHT), 2, "invalid height");
-      pixl_set_resolution(L, width, height);
+      pixl_set_resolution(L, width, height, aspect);
       return 0;
     default:
       return luaL_error(L, "wrong number of arguments");
@@ -899,6 +904,12 @@ static int pixl_f_time(lua_State *L) {
   return 1;
 }
 
+static int pixl_f_cursor(lua_State *L) {
+  if (lua_gettop(L) > 0) SDL_ShowCursor((int)lua_toboolean(L, 1));
+  lua_pushboolean(L, SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE);
+  return 1;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -940,6 +951,7 @@ static const luaL_Reg pixl_funcs[] = {
   { "title", pixl_f_title },
   { "clipboard", pixl_f_clipboard },
   { "time", pixl_f_time },
+  { "cursor", pixl_f_cursor },
 
   { NULL, NULL }
 };
@@ -1121,7 +1133,7 @@ static int pixl_init(lua_State *L) {
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (renderer == NULL) luaL_error(L, "SDL_CreateRenderer() failed: %s", SDL_GetError());
   SDL_StartTextInput();
-  pixl_set_resolution(L, 256, 240);
+  pixl_set_resolution(L, 256, 240, 0.0);
   pixl_open_controllers(L);
 
   SDL_AudioSpec want, have;

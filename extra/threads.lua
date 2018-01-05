@@ -1,26 +1,46 @@
 --[[----------------------------------------------------------------------------
 
-    Very simplistic Object for prototype based programming.
+    Simple coroutine / thread "manager" with wait function
     written by Sebastian Steinhauer <s.steinhauer@yahoo.de>
 
 --]]----------------------------------------------------------------------------
 
-local assert = assert
-local type = type
-local setmetatable = setmetatable
+local Object = require('object') -- needs object.lua from extra
 
-local function new(self, object)
-  assert(type(self) == 'table', "Object expected for self, got '%s'", type(self))
-  object = object or {}
-  assert(type(object) == 'table', "Table expected for new, got '%s'", type(object))
-  object = setmetatable(object, { __index = self, __call = new })
-  if type(object.__init) == 'function' then
-    object:__init()
+local function wait(seconds)
+  while seconds > 0 do
+    local dt = coroutine.yield()
+    seconds = seconds - dt
   end
-  return object
 end
 
-return new({})
+return Object({
+  __init = function(self)
+    self.threads = {}
+  end,
+
+  start = function(self, fn)
+    local thread = coroutine.create(fn)
+    coroutine.resume(wait)
+    self.threads[thread] = true
+    return function()
+      self.threads[threads] = nil
+    end
+  end,
+
+  update = function(self, dt)
+    for thread in pairs(self.threads) do
+      local result = coroutine.resume(thread, dt)
+      if not result then
+        self.threads[thread] = nil
+      end
+    end
+  end,
+
+  active = function(self)
+    return not not next(self.threads)
+  end,
+})
 
 --[[----------------------------------------------------------------------------
 
