@@ -1,7 +1,7 @@
-# PiXL - a tiny Lua pixel game engine
+# PiXL - a tiny Lua pixel/chiptune game engine
 > “Make things as simple as possible, but not simpler.” - *Albert Einstein*
 
-PiXL is a tiny pixel game engine that's great for retro games or game-jams.
+PiXL is a tiny pixel/chiptune game engine that's great for retro games or game-jams.
 
 [![Build Status](https://travis-ci.org/kieselsteini/PiXL.svg?branch=master)](https://travis-ci.org/kieselsteini/PiXL)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/kieselsteini/PiXL)](https://ci.appveyor.com/project/kieselsteini/pixl)
@@ -14,14 +14,12 @@ PiXL is a tiny pixel game engine that's great for retro games or game-jams.
 - simple and advanced drawing functions
 - customizeable font glyphs
 - sprite/images are simple Lua strings
+- simple chip-tune support with different waveforms
 - controller support
 
 ## Non-Features
 - image loading / saving ... sprites are Lua strings!
 - advanced modern OpenGL/Direct3D rendering
-
-## Planned Features
-- chiptune sound engine with different waveform generators
 
 ## Goals
 - **a "ready to go" package**: just ship PiXL.exe / SDL2.dll / LICENSES.txt and your game.lua
