@@ -287,6 +287,29 @@ local addr = pixl.resolve('my-host.org') -- returns the IPv4 address of the give
 local addr = assert(pixl.resolve('127.0.0.1'))
 ```
 
+## Sound Functions
+
+PiXL provides a simple interface to create chip-tune sounds. The simple command ```sound()``` activates a sound generator in one of the 8 sound channels.
+Supported waveforms for the sound generator:
+* **silent** disable the sound generator
+* **pulse50** a pulse wave with 50% duty cycle
+* **pulse25** a pulse wave with 25% duty cycle
+* **pulse12** a pulse wave with 12.5% duty cycle
+* **noise** a white-noise generator (can be pitched with frequency)
+
+### pixl.sound(channel[, waveform[, frequency, duration]])
+Activate (or deactivate) a sound generator channel.
+```lua
+pixl.sound(0, 'pulse50', 440, 1.0) -- play a 440Hz tone on channel 0 for 1s
+pixl.sound(1, 'pulse25', 880, 1.0) -- play a 880Hz tone on channel 1 for 1s
+pixl.sound(2, 'pulse12', 220, 1.0) -- play a 220Hz tone on channel 2 for 1s
+
+pixl.sound(5, 'noise', 1000, 2) -- play a noise with 1000Hz on channel 5 for 2 seconds
+
+pixl.sound(6, 'silent') -- disable sound generation on channel 6
+pixl.sound(7) -- disable sound generation on channel 7
+```
+
 ## Miscellaneous Functions
 
 ### pixl.quit()
