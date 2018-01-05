@@ -316,3 +316,10 @@ local text = pixl.clipboard() -- get text from clipboard (nil if empty)
 ```lua
 local time = pixl.time() -- return the passed time sice start in seconds
 ```
+
+### pixl.cursor([enable])
+```lua
+pixl.cursor(false) -- hide the mouse cursor in the window
+
+local visible = pixl.cursor() -- query the cursor show state
+```

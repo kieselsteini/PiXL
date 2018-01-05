@@ -809,6 +809,12 @@ static int pixl_f_time(lua_State *L) {
   return 1;
 }
 
+static int pixl_f_cursor(lua_State *L) {
+  if (lua_gettop(L) > 0) SDL_ShowCursor((int)lua_toboolean(L, 1));
+  lua_pushboolean(L, SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE);
+  return 1;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -848,6 +854,7 @@ static const luaL_Reg pixl_funcs[] = {
   { "title", pixl_f_title },
   { "clipboard", pixl_f_clipboard },
   { "time", pixl_f_time },
+  { "cursor", pixl_f_cursor },
 
   { NULL, NULL }
 };
