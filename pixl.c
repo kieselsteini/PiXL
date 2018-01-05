@@ -89,7 +89,9 @@ enum {
 
 enum {
   PIXL_WAVEFORM_SILENT,
-  PIXL_WAVEFORM_PULSE,
+  PIXL_WAVEFORM_PULSE50,
+  PIXL_WAVEFORM_PULSE25,
+  PIXL_WAVEFORM_PULSE12,
   PIXL_WAVEFORM_NOISE
 };
 
@@ -356,6 +358,25 @@ static Uint32 pixl_xorshift(Uint32 *seed) {
   x ^= x << 5;
   *seed = x;
   return x;
+}
+
+static void pixl_sound(int slot, int waveform, float frequency, float duration) {
+  if (slot < 0 || slot >= PIXL_SOUND_CHANNELS) return;
+  SoundChannel *channel = &sound_channels[slot];
+
+  SDL_LockAudioDevice(audio_device);
+  channel->waveform = waveform;
+  if (waveform != PIXL_WAVEFORM_SILENT) {
+    channel->cycle = (int)(sound_sample_rate / frequency);
+    channel->counter = channel->cycle;
+    channel->duration = (int)(sound_sample_rate * duration);
+    switch (waveform) {
+      case PIXL_WAVEFORM_PULSE50: channel->duty = channel->cycle / 2; break;
+      case PIXL_WAVEFORM_PULSE25: channel->duty = channel->cycle / 4; break;
+      case PIXL_WAVEFORM_PULSE12: channel->duty = channel->cycle / 8; break;
+    }
+  }
+  SDL_UnlockAudioDevice(audio_device);
 }
 
 #define pixl_swap(T, a, b) do { T __tmp__ = a; a = b; b = __tmp__; } while(0)
@@ -626,7 +647,9 @@ static void pixl_sound_mixer(void *userdata, Uint8 *stream, int length) {
     for (j = 0; j < PIXL_SOUND_CHANNELS; ++j) {
       SoundChannel *channel = &sound_channels[j];
       switch (channel->waveform) {
-        case PIXL_WAVEFORM_PULSE:
+        case PIXL_WAVEFORM_PULSE50:
+        case PIXL_WAVEFORM_PULSE25:
+        case PIXL_WAVEFORM_PULSE12:
           if (--channel->duration <= 0) channel->waveform = PIXL_WAVEFORM_SILENT;
           if (++channel->counter >= channel->cycle) channel->counter = 0;
           sample += channel->counter < channel->duty ? 8 : -8;
@@ -639,6 +662,8 @@ static void pixl_sound_mixer(void *userdata, Uint8 *stream, int length) {
           }
           sample += (Sint8)channel->duty;
           break;
+        case PIXL_WAVEFORM_SILENT:
+          break;
       }
     }
     *stream++ = (Uint8)sample;
@@ -646,46 +671,15 @@ static void pixl_sound_mixer(void *userdata, Uint8 *stream, int length) {
 }
 
 static int pixl_f_sound(lua_State *L) {
-  static const char *options[] = { "pulse50", "pulse25", "pulse12", "noise", NULL };
+  static const char *options[] = { "silent", "pulse50", "pulse25", "pulse12", "noise", NULL };
   int slot = (int)luaL_checkinteger(L, 1);
   luaL_argcheck(L, slot >= 0 && slot < PIXL_SOUND_CHANNELS, 1, "invalid sound channel");
-  SoundChannel *channel = &sound_channels[slot];
-  SDL_LockAudioDevice(audio_device);
-  switch (lua_gettop(L)) {
-    case 1:
-      channel->waveform = PIXL_WAVEFORM_SILENT;
-      break;
-    case 3:
-    case 4: {
-      float frequency = (float)luaL_checknumber(L, 2);
-      float duration = (float)luaL_checknumber(L, 3);
-      channel->cycle = (int)(sound_sample_rate / frequency);
-      channel->counter = channel->cycle;
-      channel->duration = (int)(sound_sample_rate * duration);
-      switch (luaL_checkoption(L, 4, "pulse50", options)) {
-        case 0:
-          channel->waveform = PIXL_WAVEFORM_PULSE;
-          channel->duty = channel->cycle / 2;
-          break;
-        case 1:
-          channel->waveform = PIXL_WAVEFORM_PULSE;
-          channel->duty = channel->cycle / 4;
-          break;
-        case 2:
-          channel->waveform = PIXL_WAVEFORM_PULSE;
-          channel->duty = channel->cycle / 8;
-          break;
-        case 3:
-          channel->waveform = PIXL_WAVEFORM_NOISE;
-          break;
-      }
-      break;
-    }
-    default:
-      SDL_UnlockAudioDevice(audio_device);
-      return luaL_error(L, "wrong number of arguments");
-  }
-  SDL_UnlockAudioDevice(audio_device);
+  int waveform = luaL_checkoption(L, 2, "silent", options);
+  if (waveform != PIXL_WAVEFORM_SILENT) {
+    float frequency = (float)luaL_checknumber(L, 3);
+    float duration = (float)luaL_checknumber(L, 4);
+    pixl_sound(slot, waveform, frequency, duration);
+  } else pixl_sound(slot, PIXL_WAVEFORM_SILENT, 0.0f, 0.0f);
   return 0;
 }
 
