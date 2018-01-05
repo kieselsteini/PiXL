@@ -293,8 +293,8 @@ static void pixl_set_resolution(lua_State *L, int width, int height, double aspe
   if (aspect) height = (int)((1.0 / aspect) * (double)width);
 
   if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
-    int factorx = (mode.w - PIXL_WINDOW_PADDING) / screen_width;
-    int factory = (mode.h - PIXL_WINDOW_PADDING) / screen_height;
+    int factorx = (mode.w - PIXL_WINDOW_PADDING) / width;
+    int factory = (mode.h - PIXL_WINDOW_PADDING) / height;
     int factor = factory > factorx ? factorx : factory;
     SDL_SetWindowSize(window, width * factor, height * factor);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
