@@ -9,7 +9,7 @@ PiXL is a tiny pixel/chiptune game engine that's great for retro games or game-j
 ## Features
 - newest Lua 5.3 with all features
 - pure software rendered screen
-- 16 color palette
+- 256 color palette
 - variable resolution (up to 2048x2048) and aspect ratios
 - simple and advanced drawing functions
 - customizeable font glyphs
@@ -74,7 +74,7 @@ end
 ## Video Settings
 
 ### pixl.color(slot[r, g, b])
-PiXL provides a 16 color palette. The default palette is the famous Dawnbringer 16 color palette (https://github.com/geoffb/dawnbringer-palettes). In the *extra* directory is the *palette.lua* which provides different also very common 16 color palettes ready to use for you.
+PiXL provides a 256 color palette. The default palette is the famous Dawnbringer 16 color palette (https://github.com/geoffb/dawnbringer-palettes). Color 16-255 are black by default. In the *extra* directory is the *palette.lua* which provides different also very common color palettes ready to use for you.
 
 ```lua
 pixl.color(0, 0x00, 0x00, 0x00) -- set color 0 to RGB #000000

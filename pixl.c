@@ -134,7 +134,7 @@ char textinput[32];
 
 // default color palette
 // https://github.com/geoffb/dawnbringer-palettes
-static SDL_Color colors[16] = {
+static SDL_Color colors[256] = {
   { 0x14, 0x0C, 0x1C, 0xFF },   // Black
   { 0x44, 0x24, 0x34, 0xFF },   // Dark Red
   { 0x30, 0x34, 0x6D, 0xFF },   // Dark Blue
@@ -285,16 +285,6 @@ Uint8 font[128][8] = {
   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }    // U+007F
 };
 
-// map string to number values (string color mapping)
-static const Uint8 sprite_color_map[128] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-  2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 10, 11, 12, 13, 14, 15, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10,
-  11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0
-};
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -347,7 +337,7 @@ static void pixl_pset(Uint8 color, int x, int y) {
 
 static Uint8 pixl_pget(int x, int y) {
   if ((x >= 0) && (x < screen_width) && (y >= 0) && (y < screen_height)) {
-    return screen[x][y] & 15;
+    return screen[x][y];
   }
   return 0;
 }
@@ -392,7 +382,7 @@ static void pixl_sound(int slot, int waveform, float frequency, float duration) 
 static int pixl_f_color(lua_State *L) {
   SDL_Color *color;
   int slot = (int)luaL_checkinteger(L, 1);
-  luaL_argcheck(L, (slot >= 0) && (slot < 16), 1, "invalid color slot");
+  luaL_argcheck(L, (slot >= 0) && (slot < 256), 1, "invalid color slot");
   color = &colors[slot];
   switch (lua_gettop(L)) {
     case 1:
@@ -625,12 +615,12 @@ static int pixl_f_sprite(lua_State *L) {
   int y = (int)luaL_checkinteger(L, 2);
   int w = (int)luaL_checkinteger(L, 3);
   int h = (int)luaL_checkinteger(L, 4);
-  const char *data = luaL_checklstring(L, 5, &length);
-  Uint8 transparent = (Uint8)luaL_optinteger(L, 6, 16);
+  const Uint8 *data = (const Uint8*)luaL_checklstring(L, 5, &length);
+  int transparent = (int)luaL_optinteger(L, 6, -1);
   luaL_argcheck(L, (int)length == w * h, 5, "invalid sprite data length");
   for (py = 0; py < h; ++py) {
     for (px = 0; px < w; ++px) {
-      Uint8 color = sprite_color_map[(*data++) & 127];
+      Uint8 color = *data++;
       if (color != transparent) pixl_pset(color, x + px, y + py);
     }
   }
@@ -962,7 +952,7 @@ static int pixl_open(lua_State *L) {
   lua_pushstring(L, "Sebastian Steinhauer <s.steinhauer@yahoo.de>");
   lua_setfield(L, -2, "_AUTHOR");
 
-  lua_pushinteger(L, 50);
+  lua_pushinteger(L, 60);
   lua_setfield(L, -2, "_VERSION");
 
   return 1;

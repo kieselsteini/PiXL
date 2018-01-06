@@ -14,7 +14,7 @@ end
 
 local function setpalette(palette)
   -- reset entire palette
-  for i = 0, 15 do
+  for i = 0, 255 do
     pixl.color(i, 0, 0, 0)
   end
   -- set new palette
