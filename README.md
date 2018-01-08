@@ -60,6 +60,15 @@ For more information, please refer to <http://unlicense.org/>
 
 ## Callbacks
 
+### init()
+On startup PiXL will call the global function ```init()``` before it starts the event loop. This function is optional and ment to create / load data needed during the gameplay. After this function is called (wheater is it defined or not) PiXL will trigger a full garbage-collection cycle so all created temporary stuff will be flushed.
+
+```lua
+function init()
+  -- load all needed assets and create game data etc.
+end
+```
+
 ### update(dt)
 PiXL runs its own event-loop to process input and screen rendering for host operating system. To update the game logic and rendering the game screen ```update(dt)``` will be called regularely with *dt* giving the delta time in seconds since the last call of ```udpate()```.
 

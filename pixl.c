@@ -1082,6 +1082,10 @@ static void pixl_run_event_loop(lua_State *L) {
   Uint32 last_tick, current_tick, delta_ticks;
   SDL_Event ev;
 
+  if (lua_getglobal(L, "init") == LUA_TFUNCTION) lua_call(L, 0, 0)
+  else lua_pop(L, 1);
+  lua_gc(L, LUA_GCCOLLECT, 0);
+
   last_tick = SDL_GetTicks();
   while (running) {
     buttons_pressed = 0;
