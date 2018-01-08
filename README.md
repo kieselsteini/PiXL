@@ -16,6 +16,7 @@ PiXL is a tiny pixel/chiptune game engine that's great for retro games or game-j
 - sprite/images are simple Lua strings
 - simple chip-tune support with different waveforms
 - controller support
+- basic UDP networking support
 
 ## Non-Features
 - image loading / saving ... sprites are Lua strings!
@@ -60,7 +61,7 @@ For more information, please refer to <http://unlicense.org/>
 ## Callbacks
 
 ### update(dt)
-PiXL runs its own event-loop to process input and screen rendering to host operating system. To update the game logic and rendering the game screen ```update(dt)``` will be called regularely with *dt* giving the delta time in seconds since the last call of ```udpate()```.
+PiXL runs its own event-loop to process input and screen rendering for host operating system. To update the game logic and rendering the game screen ```update(dt)``` will be called regularely with *dt* giving the delta time in seconds since the last call of ```udpate()```.
 
 This means that PiXL runs theoretically with an uncapped framerate. The internal renderer respects *vsync* so on most modern PC this will result in a *60.0 FPS*  framerate.
 
@@ -162,11 +163,11 @@ pixl.print(2, 0, 8, string.format('Score: %d', score))
 ```
 
 ### pixl.sprite(x, y, width, height, data[, transparent_color])
-Images and sprites are represented as simple Lua strings containing hexadecimal values for every color. This way you can simply include all sprites directly into the source code and modify them (e.g. recoloring) with the default Lua string functionalities. It doesn't matter if you write lowecase or uppercase hex letters.
+Images and sprites are represented as simple Lua strings containing byte values for every color. This way you can simply include all sprites directly into the source code and modify them (e.g. recoloring) with the default Lua string functionalities.
 
 ```lua
 local x, y = pixl.mouse()
-pixl.sprite(x, y, 4, 4, '0123456789ABCDEF') -- draw a 4x4 image containing the whole color palette
+pixl.sprite(x, y, 4, 4, '\0\1\2\3\4\5\6\7\8\9\10\11\12\13\14\15') -- draw a 4x4 image containing the first 16 colors
 ```
 
 ## Input Functions
