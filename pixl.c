@@ -786,11 +786,9 @@ static int pixl_f_bind(lua_State *L) {
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port);
 
-  if (port > 0) {
-    if (udp != INVALID_SOCKET) {
-      closesocket(udp);
-      udp = INVALID_SOCKET;
-    }
+  if (udp != INVALID_SOCKET) {
+    closesocket(udp);
+    udp = INVALID_SOCKET;
   }
 
   pixl_create_udp_socket(L);
