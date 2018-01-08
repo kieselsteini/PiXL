@@ -748,11 +748,9 @@ static int pixl_f_bind(lua_State *L) {
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port);
 
-  if (port > 0) {
-    if (udp != INVALID_SOCKET) {
-      closesocket(udp);
-      udp = INVALID_SOCKET;
-    }
+  if (udp != INVALID_SOCKET) {
+    closesocket(udp);
+    udp = INVALID_SOCKET;
   }
 
   pixl_create_udp_socket(L);
@@ -1045,6 +1043,10 @@ static void pixl_handle_SDL_event(lua_State *L, const SDL_Event *ev) {
 static void pixl_run_event_loop(lua_State *L) {
   Uint32 last_tick, current_tick, delta_ticks;
   SDL_Event ev;
+
+  if (lua_getglobal(L, "init") == LUA_TFUNCTION) lua_call(L, 0, 0);
+  else lua_pop(L, 1);
+  lua_gc(L, LUA_GCCOLLECT, 0);
 
   last_tick = SDL_GetTicks();
   while (running) {
